@@ -1,0 +1,120 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"os"
+	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+)
+
+type Product struct {
+	ID       uint
+	Nama     string
+	Kategori string
+	Harga    string
+}
+
+func main() {
+	connURI := "postgresql://citizix_user:S3cret@localhost:5432/citizix_db?sslmode=disable"
+	db, err := sql.Open("pgx", connURI)
+	if err != nil {
+		fmt.Printf("Connection to db refuse: %v\n", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxIdleTime(15 * time.Minute)
+	db.SetConnMaxLifetime(1 * time.Hour)
+
+	err = db.Ping()
+	if err != nil {
+		fmt.Printf("Internal errors: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Connected to db")
+
+	// _, err = db.Exec(`CREATE TABLE IF NOT EXISTS produk(
+	// id SERIAL PRIMARY KEY,
+	// nama VARCHAR(255),
+	// kategori VARCHAR(255),
+	// harga INT) `)
+	// if err != nil {
+	// 	fmt.Printf("Failed create table: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Println("table crated")
+
+	// _, err = db.Exec(`INSERT INTO produk (nama, kategori, harga)
+	// VALUES ($1,$2,$3)`, "Baju", "Pakaian", 100000)
+	// if err != nil {
+	// 	fmt.Printf("Failed fill table: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Println("Data added")
+
+	// row := db.QueryRow(`SELECT id,nama,kategori,harga FROM produk where
+	// id = $1`, 1)
+	// if row == nil {
+	// 	fmt.Printf("Failed read data: %v\n", row)
+	// 	os.Exit(1)
+	// }
+	// var produk Product
+	// err = row.Scan(&produk.ID, &produk.Nama, &produk.Kategori, &produk.Harga)
+	// if err != nil {
+	// 	fmt.Printf("Failed get table: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Println(produk)
+
+	// rows, err := db.Query(`SELECT id,nama,kategori,harga from produk`)
+	// if err != nil || rows == nil {
+	// 	fmt.Printf("Failed get table: %v\n", err)
+	// 	os.Exit(1)
+	// }
+
+	// var productSlice []Product
+	// for rows.Next() {
+	// 	var product Product
+	// 	err = rows.Scan(&product.ID, &product.Nama, &product.Kategori, &product.Harga)
+	// 	if err != nil {
+	// 		fmt.Printf("Failed get table: %v\n", err)
+	// 		os.Exit(1)
+	// 	}
+	// 	productSlice = append(productSlice, product)
+	// }
+	// fmt.Println(productSlice)
+
+	// _, err = db.Exec(`UPDATE produk SET nama = $1, kategori = $2
+	// , harga = $3 WHERE id =$4`, "Kemeja", "Baju", 5000, 1)
+	// if err != nil {
+	// 	fmt.Printf("Failed update data: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Println("Data updated")
+
+	// _, err = db.Exec(`DELETE FROM produk WHERE id =$1`, 1)
+	// if err != nil {
+	// 	fmt.Printf("Failed delete data: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Println("Data deleted")
+
+	// tx, err := db.Begin()
+	// if err != nil {
+	// 	fmt.Printf("Failed create transaction: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// _, err = tx.Exec(`DELETE FROM produk WHERE id=$1`, "d")
+	// if err != nil {
+	// 	fmt.Printf("Failed delete data: %v\n", err)
+	// 	tx.Rollback()
+	// 	os.Exit(1)
+	// }
+
+	// tx.Commit()
+	// fmt.Println("Data deleted")
+}

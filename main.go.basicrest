@@ -1,0 +1,146 @@
+package main
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"strconv"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+)
+
+type Products struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Price int    `json:"price"`
+}
+
+func main() {
+	//1. make route multiplexer
+	mux := http.NewServeMux()
+
+	// 3 add handler into mux
+	mux.HandleFunc("GET /products", listProduct)
+	mux.HandleFunc("POST /products", createProduct)
+	mux.HandleFunc("PUT /products/{id}", updateProduct)
+	mux.HandleFunc("DELETE /products/{id}", deleteProduct)
+
+	// 4. Make server
+	server := http.Server{
+		Handler: mux,
+		Addr:    ":8080",
+	}
+
+	// 5 run server
+	server.ListenAndServe()
+}
+
+var database = map[int]Products{}
+
+// enumerasi id database
+var lastID = 0
+
+// 2. make func handler
+func listProduct(w http.ResponseWriter, r *http.Request) {
+	// initial slice for response
+	var products []Products
+
+	// loop map to append value map into slice response
+	for _, v := range database {
+		products = append(products, v)
+	}
+
+	// change to json
+	data, err := json.Marshal(products)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		w.Write([]byte("Terjadi Kesalahan"))
+	}
+
+	// give response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write(data)
+}
+
+func createProduct(w http.ResponseWriter, r *http.Request) {
+	bodyBite, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		w.Write([]byte("Error request"))
+	}
+
+	var products Products
+	err = json.Unmarshal(bodyBite, &products)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		w.Write([]byte("Error request"))
+	}
+
+	// increment id
+	lastID++
+
+	products.ID = lastID
+
+	// Add database
+	database[products.ID] = products
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	w.Write([]byte("Success add data"))
+}
+
+func updateProduct(w http.ResponseWriter, r *http.Request) {
+	//get id
+	productID := r.PathValue("id")
+	productIDInt, err := strconv.Atoi(productID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		w.Write([]byte("Error request"))
+	}
+
+	// request body
+	bodyBite, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		w.Write([]byte("Error request"))
+	}
+
+	var products Products
+	err = json.Unmarshal(bodyBite, &products)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		w.Write([]byte("Error request"))
+	}
+
+	//handle id that no change with new id request
+	products.ID = productIDInt
+
+	database[productIDInt] = products
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write([]byte("Success update data"))
+}
+
+func deleteProduct(w http.ResponseWriter, r *http.Request) {
+	productID := r.PathValue("id")
+
+	productIDInt, err := strconv.Atoi(productID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		w.Write([]byte("Error request"))
+	}
+
+	// remove from map
+	delete(database, productIDInt)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write([]byte("Success delete data"))
+}
